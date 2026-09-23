@@ -1,0 +1,32 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio Code
+.vscode/
+
+# User-specific files
+*.rsuser
+
+# Test results
+[Tt]est[Rr]esult*/
+[Dd]ebug/
+[Rr]elease/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local environment / secrets
+.env
+.env.*
+
+# ASP.NET local settings
+appsettings.Local.json
