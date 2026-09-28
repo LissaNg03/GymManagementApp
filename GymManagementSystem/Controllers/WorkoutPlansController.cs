@@ -132,13 +132,40 @@ namespace GymManagementSystem.Controllers
             );
         }
 
-
         // GET ALL WORKOUT PLANS
         [HttpGet]
         public async Task<IActionResult> GetWorkoutPlans()
         {
+            var query = _context.WorkoutPlans
+                .AsQueryable();
+
+            // Personal Trainer can only see plans
+            // belonging to their assigned members.
+            if (User.IsInRole("PersonalTrainer"))
+            {
+                var userId = User.FindFirstValue(
+                    ClaimTypes.NameIdentifier
+                );
+
+                var trainer =
+                    await _context.PersonalTrainers
+                        .FirstOrDefaultAsync(
+                            pt => pt.ApplicationUserId == userId
+                        );
+
+                if (trainer is null)
+                {
+                    return Forbid();
+                }
+
+                query = query.Where(wp =>
+                    wp.GymMember.PersonalTrainerId ==
+                    trainer.PersonalTrainerId
+                );
+            }
+
             var workoutPlans =
-                await _context.WorkoutPlans
+                await query
                     .Select(wp => new
                     {
                         workoutPlanId =

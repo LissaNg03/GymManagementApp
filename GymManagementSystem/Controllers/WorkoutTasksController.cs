@@ -162,38 +162,62 @@ namespace GymManagementSystem.Controllers
         // GET ALL WORKOUT TASKS
         // Admin
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,PersonalTrainer")]
         public async Task<IActionResult> GetWorkoutTasks()
         {
-            var tasks =
-                await _context.WorkoutTasks
-                    .Select(wt => new
-                    {
-                        workoutTaskId =
-                            wt.WorkoutTaskId,
+            var query = _context.WorkoutTasks
+                .Include(wt => wt.WorkoutPlan)
+                .ThenInclude(wp => wp.GymMember)
+                .AsQueryable();
 
-                        exerciseName =
-                            wt.ExerciseName,
+            if (User.IsInRole("PersonalTrainer"))
+            {
+                var userId = User.FindFirstValue(
+                    ClaimTypes.NameIdentifier
+                );
 
-                        description =
-                            wt.Description,
+                var trainer = await _context.PersonalTrainers
+                    .FirstOrDefaultAsync(
+                        pt => pt.ApplicationUserId == userId
+                    );
 
-                        sets =
-                            wt.Sets,
+                if (trainer is null)
+                {
+                    return Forbid();
+                }
 
-                        repetitions =
-                            wt.Repetitions,
+                query = query.Where(wt =>
+                    wt.WorkoutPlan.GymMember.PersonalTrainerId
+                    == trainer.PersonalTrainerId
+                );
+            }
 
-                        workoutDate =
-                            wt.WorkoutDate,
+            var tasks = await query
+                .Select(wt => new
+                {
+                    workoutTaskId = wt.WorkoutTaskId,
 
-                        status =
-                            wt.Status,
+                    exerciseName = wt.ExerciseName,
 
-                        workoutPlanId =
-                            wt.WorkoutPlanId
-                    })
-                    .ToListAsync();
+                    description = wt.Description,
+
+                    sets = wt.Sets,
+
+                    repetitions = wt.Repetitions,
+
+                    workoutDate = wt.WorkoutDate,
+
+                    status = wt.Status,
+
+                    workoutPlanId = wt.WorkoutPlanId,
+
+                    planName = wt.WorkoutPlan.PlanName,
+
+                    memberName = wt.WorkoutPlan.GymMember.Name,
+
+                    memberSurname = wt.WorkoutPlan.GymMember.Surname
+                })
+                .ToListAsync();
 
             return Ok(tasks);
         }
